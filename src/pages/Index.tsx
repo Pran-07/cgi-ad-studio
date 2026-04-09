@@ -266,7 +266,7 @@ const Index = () => {
               <div className="space-y-2">
                 <p className="font-medium text-destructive">Something went wrong</p>
                 <p className="text-sm text-muted-foreground">{error}</p>
-                <Button variant="outline" size="sm" onClick={handleSubmit as () => void}>
+                <Button variant="outline" size="sm" onClick={() => handleSubmit({ preventDefault: () => {} } as FormEvent)}>
                   Retry
                 </Button>
               </div>
