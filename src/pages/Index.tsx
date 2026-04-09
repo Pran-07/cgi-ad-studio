@@ -142,19 +142,43 @@ const Index = () => {
       }
 
       const contentType = res.headers.get("content-type") || "";
+      let data: Record<string, unknown>;
       if (!contentType.includes("application/json")) {
         const text = await res.text();
-        // Try parsing as JSON anyway
         try {
-          const data = JSON.parse(text);
-          setResult(data);
+          data = JSON.parse(text);
         } catch {
           throw new Error(`Unexpected response format: ${text.slice(0, 200)}`);
         }
       } else {
-        const data = await res.json();
-        setResult(data);
+        data = await res.json();
       }
+
+      // If response contains a video_url, download and save to cloud storage
+      const videoUrl = data.video_url as string | undefined;
+      if (videoUrl && isUrl(videoUrl)) {
+        const videoRes = await fetch(videoUrl);
+        if (!videoRes.ok) throw new Error("Failed to download generated video");
+        const videoBlob = await videoRes.blob();
+        const videoExt = videoUrl.split(".").pop()?.split("?")[0] || "mp4";
+        const videoFileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${videoExt}`;
+
+        const { error: videoUploadError } = await supabase.storage
+          .from("generated-videos")
+          .upload(videoFileName, videoBlob, { contentType: videoBlob.type || "video/mp4" });
+
+        if (videoUploadError) {
+          throw new Error(`Video save failed: ${videoUploadError.message}`);
+        }
+
+        const { data: videoUrlData } = supabase.storage
+          .from("generated-videos")
+          .getPublicUrl(videoFileName);
+
+        data.video_url = videoUrlData.publicUrl;
+      }
+
+      setResult(data);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
