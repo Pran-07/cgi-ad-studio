@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Loader2, Upload, RotateCcw, Film, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const WEBHOOK_URL = "https://ganesh012.app.n8n.cloud/webhook-test/adcraftor.in";
 
