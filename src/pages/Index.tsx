@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Loader2, Upload, RotateCcw, Film, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const WEBHOOK_URL = "https://ganesh012.app.n8n.cloud/webhook-test/adcraftor.in";
 
@@ -108,22 +109,26 @@ const Index = () => {
     setResult(null);
 
     try {
-      // Convert file to base64 data URL so n8n receives it as a string in body.image_url
-      const toBase64 = (f: File): Promise<string> =>
-        new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(f);
-        });
+      // Upload image to Supabase Storage to get a public URL
+      const fileExt = file!.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(fileName, file!);
 
-      const imageBase64 = await toBase64(file!);
+      if (uploadError) {
+        throw new Error(`Image upload failed: ${uploadError.message}`);
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("product-images")
+        .getPublicUrl(fileName);
 
       const res = await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          image_url: imageBase64,
+          image_url: urlData.publicUrl,
           gender: formData.gender,
           skin_tone: formData.skin_tone,
           hair_length: formData.hair_length,
