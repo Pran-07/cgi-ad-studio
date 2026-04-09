@@ -108,17 +108,28 @@ const Index = () => {
     setResult(null);
 
     try {
-      const body = new FormData();
-      body.append("image_url", file!);
-      body.append("gender", formData.gender);
-      body.append("skin_tone", formData.skin_tone);
-      body.append("hair_length", formData.hair_length);
-      body.append("body_type", formData.body_type);
-      body.append("model_position", formData.model_position);
+      // Convert file to base64 data URL so n8n receives it as a string in body.image_url
+      const toBase64 = (f: File): Promise<string> =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(f);
+        });
+
+      const imageBase64 = await toBase64(file!);
 
       const res = await fetch(WEBHOOK_URL, {
         method: "POST",
-        body,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image_url: imageBase64,
+          gender: formData.gender,
+          skin_tone: formData.skin_tone,
+          hair_length: formData.hair_length,
+          body_type: formData.body_type,
+          model_position: formData.model_position,
+        }),
       });
 
       if (!res.ok) {
