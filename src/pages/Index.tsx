@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, Upload, RotateCcw, Film, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-const START_URL = "https://ganesh012.app.n8n.cloud/webhook-test/adcraftor.in";
+const START_URL = "https://ganesh012.app.n8n.cloud/webhook/adcraftor.in";
 const STATUS_URL = "https://ganesh012.app.n8n.cloud/webhook/adcraftor-status";
 const POLL_INTERVAL = 5000;
 const TIMEOUT_MS = 10 * 60 * 1000;
