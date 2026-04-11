@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, FormEvent } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -6,8 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, Upload, RotateCcw, Film, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-const START_URL = "https://ggt.app.n8n.cloud/webhook/adcraftor.in";
-const STATUS_URL = "https://ggt.app.n8n.cloud/webhook/adcraftor-status";
+const START_URL = "https://ganesh0102.app.n8n.cloud/webhook/adcreator.in";
+const STATUS_URL = "https://ganesh0102.app.n8n.cloud/webhook/adcraftor-status";
 const POLL_INTERVAL = 5000;
 const TIMEOUT_MS = 10 * 60 * 1000;
 
@@ -124,8 +124,8 @@ const Index = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
+    console.log("clicked");
     if (!validate()) return;
 
     setLoading(true);
@@ -140,20 +140,24 @@ const Index = () => {
 
       const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(fileName);
 
+      console.log("Sending POST to", START_URL);
       const res = await fetch(START_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image_url: urlData.publicUrl, ...formData }),
       });
 
+      console.log("Response status:", res.status);
       if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
 
       const data = await res.json();
+      console.log("Response data:", data);
       if (!data.jobId) throw new Error("No jobId received from server");
 
       setJobId(data.jobId);
       startPolling(data.jobId);
     } catch (err: unknown) {
+      console.error("handleSubmit error:", err);
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
       setLoading(false);
     }
@@ -192,7 +196,7 @@ const Index = () => {
       </header>
 
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-        <form onSubmit={handleSubmit} className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
           <div>
             <h2 className="text-lg font-semibold text-foreground">Product & Model Details</h2>
             <p className="text-sm text-muted-foreground">Upload your product image and configure the AI model.</p>
@@ -234,10 +238,10 @@ const Index = () => {
             ))}
           </div>
 
-          <Button type="submit" disabled={loading} className="w-full" size="lg">
+          <Button type="button" disabled={loading} className="w-full" size="lg" onClick={handleSubmit}>
             {loading ? <><Loader2 className="animate-spin" />Generating Video…</> : "Generate CGI Ad Video"}
           </Button>
-        </form>
+        </div>
 
         {/* Polling Status */}
         {polling && (
