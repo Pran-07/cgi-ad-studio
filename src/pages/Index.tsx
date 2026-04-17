@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Upload, RotateCcw, Film, AlertCircle } from "lucide-react";
+import { Loader2, Upload, RotateCcw, Film, AlertCircle, LogOut, Home } from "lucide-react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const START_URL = "https://ballu01.app.n8n.cloud/webhook/adcreator.in";
 const STATUS_URL = "https://ballu01.app.n8n.cloud/webhook/adcraftor-status";
@@ -36,6 +38,7 @@ function isVideoUrl(url: string): boolean {
 }
 
 const Index = () => {
+  const { user, signOut } = useAuth();
   const [formData, setFormData] = useState<FormData>({ gender: "", skin_tone: "", hair_length: "", body_type: "", model_position: "" });
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -182,15 +185,19 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card">
-        <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-6 sm:px-6">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-primary shadow-glow">
               <Film className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">AdCraftor</h1>
               <p className="text-sm text-muted-foreground">AI-powered CGI ad video generator</p>
             </div>
+          </Link>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="sm"><Link to="/"><Home className="h-4 w-4" /></Link></Button>
+            {user && <Button onClick={signOut} variant="outline" size="sm"><LogOut className="mr-1 h-4 w-4" />Logout</Button>}
           </div>
         </div>
       </header>
