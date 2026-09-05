@@ -14,11 +14,14 @@ const POLL_INTERVAL = 5000;
 const TIMEOUT_MS = 10 * 60 * 1000;
 
 interface FormData {
+  age: string;
   gender: string;
+  ethnicity: string;
   skin_tone: string;
   hair_length: string;
   body_type: string;
   model_position: string;
+  background: string;
 }
 
 const selectFields = [
