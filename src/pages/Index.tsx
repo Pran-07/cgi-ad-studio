@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Loader2, Upload, RotateCcw, Film, AlertCircle, LogOut, Home } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -238,6 +239,23 @@ const Index = () => {
               />
             </div>
             {validationErrors.product_image && <p className="text-xs text-destructive">{validationErrors.product_image}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="age" className="text-sm font-medium text-foreground">
+              Model Age <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="age"
+              type="number"
+              min={1}
+              step={1}
+              placeholder="Enter model age"
+              value={formData.age}
+              onChange={(e) => { setFormData((prev) => ({ ...prev, age: e.target.value })); setValidationErrors((prev) => ({ ...prev, age: "" })); }}
+              className={validationErrors.age ? "border-destructive" : ""}
+            />
+            {validationErrors.age && <p className="text-xs text-destructive">{validationErrors.age}</p>}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
