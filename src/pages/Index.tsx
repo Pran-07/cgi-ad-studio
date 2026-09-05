@@ -26,10 +26,12 @@ interface FormData {
 
 const selectFields = [
   { label: "Model Gender", name: "gender" as const, options: [{ label: "Male", value: "male" }, { label: "Female", value: "female" }] },
+  { label: "Ethnicity", name: "ethnicity" as const, options: [{ label: "Asian", value: "asian" }, { label: "American", value: "american" }, { label: "European", value: "european" }, { label: "African", value: "african" }, { label: "Middle Eastern", value: "middle_eastern" }] },
   { label: "Skin Tone", name: "skin_tone" as const, options: [{ label: "Light", value: "light" }, { label: "Medium", value: "medium" }, { label: "Dark", value: "dark" }] },
   { label: "Hair Length", name: "hair_length" as const, options: [{ label: "Short", value: "short" }, { label: "Medium", value: "medium" }, { label: "Long", value: "long" }] },
   { label: "Body Type", name: "body_type" as const, options: [{ label: "Slim", value: "slim" }, { label: "Average", value: "average" }, { label: "Athletic", value: "athletic" }] },
   { label: "Model Position", name: "model_position" as const, options: [{ label: "Standing", value: "standing" }, { label: "Sitting", value: "sitting" }, { label: "Holding Product", value: "holding_product" }] },
+  { label: "Background", name: "background" as const, options: [{ label: "Outdoor Street", value: "outdoor_street" }, { label: "Indoor Studio", value: "indoor_studio" }, { label: "Nature / Park", value: "nature_park" }, { label: "Office / Workspace", value: "office_workspace" }, { label: "Minimal Plain", value: "minimal_plain" }] },
 ];
 
 function isUrl(value: string): boolean {
@@ -42,7 +44,7 @@ function isVideoUrl(url: string): boolean {
 
 const Index = () => {
   const { user, signOut } = useAuth();
-  const [formData, setFormData] = useState<FormData>({ gender: "", skin_tone: "", hair_length: "", body_type: "", model_position: "" });
+  const [formData, setFormData] = useState<FormData>({ age: "", gender: "", ethnicity: "", skin_tone: "", hair_length: "", body_type: "", model_position: "", background: "" });
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [polling, setPolling] = useState(false);
@@ -123,6 +125,9 @@ const Index = () => {
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
     if (!file) errors.product_image = "Please upload a product image";
+    const ageNum = Number(formData.age);
+    if (!formData.age) errors.age = "Age is required";
+    else if (!Number.isInteger(ageNum) || ageNum <= 0) errors.age = "Age must be a positive whole number";
     for (const field of selectFields) {
       if (!formData[field.name]) errors[field.name] = `${field.label} is required`;
     }
@@ -171,7 +176,7 @@ const Index = () => {
 
   const handleReset = () => {
     stopPolling();
-    setFormData({ gender: "", skin_tone: "", hair_length: "", body_type: "", model_position: "" });
+    setFormData({ age: "", gender: "", ethnicity: "", skin_tone: "", hair_length: "", body_type: "", model_position: "", background: "" });
     setFile(null);
     setResult(null);
     setError(null);
