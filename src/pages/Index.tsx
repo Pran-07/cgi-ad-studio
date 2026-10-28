@@ -9,8 +9,8 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-const START_URL = "https://ganaya.app.n8n.cloud/webhook/adcreator.in";
-const STATUS_URL = "https://ganaya.app.n8n.cloud/webhook/adcraftor-status";
+const START_URL = "https://pjj07.app.n8n.cloud/webhook/adcreator.in";
+const STATUS_URL = "https://pjj07.app.n8n.cloud/webhook/adcraftor-status";
 const POLL_INTERVAL = 5000;
 const TIMEOUT_MS = 10 * 60 * 1000;
 
