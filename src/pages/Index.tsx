@@ -230,7 +230,14 @@ const Index = () => {
             >
               <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
               {file ? (
-                <p className="text-sm font-medium text-foreground">{file.name}</p>
+                <>
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt="Product preview"
+                    className="mt-2 max-h-56 w-auto rounded-xl border border-border object-contain shadow-sm"
+                  />
+                  <p className="mt-2 text-sm font-medium text-foreground">{file.name}</p>
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground">Click to upload product image</p>
               )}
