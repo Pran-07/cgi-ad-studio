@@ -1,10 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Upload, RotateCcw, Film, AlertCircle, LogOut, Home } from "lucide-react";
+import { Loader2, Upload, RotateCcw, Film, AlertCircle, LogOut, Home, X, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,26 +11,8 @@ const STATUS_URL = "https://pjj07.app.n8n.cloud/webhook/adcraftor-status";
 const POLL_INTERVAL = 5000;
 const TIMEOUT_MS = 10 * 60 * 1000;
 
-interface FormData {
-  age: string;
-  gender: string;
-  ethnicity: string;
-  skin_tone: string;
-  hair_length: string;
-  body_type: string;
-  model_position: string;
-  background: string;
-}
-
-const selectFields = [
-  { label: "Model Gender", name: "gender" as const, options: [{ label: "Male", value: "male" }, { label: "Female", value: "female" }] },
-  { label: "Ethnicity", name: "ethnicity" as const, options: [{ label: "Asian", value: "asian" }, { label: "American", value: "american" }, { label: "European", value: "european" }, { label: "African", value: "african" }, { label: "Middle Eastern", value: "middle_eastern" }] },
-  { label: "Skin Tone", name: "skin_tone" as const, options: [{ label: "Light", value: "light" }, { label: "Medium", value: "medium" }, { label: "Dark", value: "dark" }] },
-  { label: "Hair Length", name: "hair_length" as const, options: [{ label: "Short", value: "short" }, { label: "Medium", value: "medium" }, { label: "Long", value: "long" }] },
-  { label: "Body Type", name: "body_type" as const, options: [{ label: "Slim", value: "slim" }, { label: "Average", value: "average" }, { label: "Athletic", value: "athletic" }] },
-  { label: "Model Position", name: "model_position" as const, options: [{ label: "Standing", value: "standing" }, { label: "Sitting", value: "sitting" }, { label: "Holding Product", value: "holding_product" }] },
-  { label: "Background", name: "background" as const, options: [{ label: "Outdoor Street", value: "outdoor_street" }, { label: "Indoor Studio", value: "indoor_studio" }, { label: "Nature / Park", value: "nature_park" }, { label: "Office / Workspace", value: "office_workspace" }, { label: "Minimal Plain", value: "minimal_plain" }] },
-];
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 function isUrl(value: string): boolean {
   try { new URL(value); return true; } catch { return false; }
@@ -45,15 +24,15 @@ function isVideoUrl(url: string): boolean {
 
 const Index = () => {
   const { user, signOut } = useAuth();
-  const [formData, setFormData] = useState<FormData>({ age: "", gender: "", ethnicity: "", skin_tone: "", hair_length: "", body_type: "", model_position: "", background: "" });
   const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [polling, setPolling] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -123,47 +102,74 @@ const Index = () => {
 
   useEffect(() => () => stopPolling(), [stopPolling]);
 
-  const validate = (): boolean => {
-    const errors: Record<string, string> = {};
-    if (!file) errors.product_image = "Please upload a product image";
-    const ageNum = Number(formData.age);
-    if (!formData.age) errors.age = "Age is required";
-    else if (!Number.isInteger(ageNum) || ageNum <= 0) errors.age = "Age must be a positive whole number";
-    for (const field of selectFields) {
-      if (!formData[field.name]) errors[field.name] = `${field.label} is required`;
+  const handleFileSelection = (selected: File | null): boolean => {
+    setFileError(null);
+    if (!selected) return false;
+    if (!ACCEPTED_TYPES.includes(selected.type)) {
+      setFileError("Unsupported file type. Please upload a JPG, PNG or WEBP image.");
+      return false;
     }
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+    if (selected.size > MAX_FILE_SIZE) {
+      setFileError("File is too large. Maximum size is 10MB.");
+      return false;
+    }
+    setFile(selected);
+    return true;
+  };
+
+  const handleInputChange = (files: FileList | null) => {
+    handleFileSelection(files?.[0] || null);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    handleFileSelection(e.dataTransfer.files?.[0] || null);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  };
+
+  const removeFile = () => {
+    setFile(null);
+    setFileError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSubmit = async () => {
-    console.log("clicked");
-    if (!validate()) return;
+    if (!file || loading) return;
 
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
-      const fileExt = file!.name.split(".").pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from("product-images").upload(fileName, file!);
+      const { error: uploadError } = await supabase.storage.from("product-images").upload(fileName, file);
       if (uploadError) throw new Error(`Image upload failed: ${uploadError.message}`);
 
       const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(fileName);
 
-      console.log("Sending POST to", START_URL);
       const res = await fetch(START_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image_url: urlData.publicUrl, ...formData }),
+        body: JSON.stringify({ image_url: urlData.publicUrl }),
       });
 
-      console.log("Response status:", res.status);
       if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
 
       const data = await res.json();
-      console.log("Response data:", data);
       if (!data.jobId) throw new Error("No jobId received from server");
 
       setJobId(data.jobId);
@@ -177,13 +183,12 @@ const Index = () => {
 
   const handleReset = () => {
     stopPolling();
-    setFormData({ age: "", gender: "", ethnicity: "", skin_tone: "", hair_length: "", body_type: "", model_position: "", background: "" });
     setFile(null);
+    setFileError(null);
     setResult(null);
     setError(null);
     setJobId(null);
     setElapsedSec(0);
-    setValidationErrors({});
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -214,8 +219,10 @@ const Index = () => {
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
         <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Product & Model Details</h2>
-            <p className="text-sm text-muted-foreground">Upload your product image and configure the AI model.</p>
+            <h2 className="text-lg font-semibold text-foreground">Upload Your Product</h2>
+            <p className="text-sm text-muted-foreground">
+              Upload a clear photo of your product. Our AI will pick the perfect model, pose and background automatically.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -223,63 +230,90 @@ const Index = () => {
               Product Image <span className="text-destructive">*</span>
             </Label>
             <div
-              className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-colors hover:border-primary/50 hover:bg-muted/50 ${
-                validationErrors.product_image ? "border-destructive" : file ? "border-primary/30 bg-primary/5" : "border-border"
+              className={`flex min-h-[280px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
+                fileError ? "border-destructive"
+                : dragActive ? "border-primary bg-primary/10"
+                : file ? "border-primary/30 bg-primary/5"
+                : "border-border hover:border-primary/50 hover:bg-muted/50"
               }`}
               onClick={() => fileInputRef.current?.click()}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
             >
-              <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
+              <input
+                ref={fileInputRef}
+                id="product_image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => handleInputChange(e.target.files)}
+              />
               {file ? (
-                <>
+                <div className="flex flex-col items-center gap-3">
                   <img
                     src={URL.createObjectURL(file)}
                     alt="Product preview"
-                    className="mt-2 max-h-56 w-auto rounded-xl border border-border object-contain shadow-sm"
+                    className="max-h-56 w-auto rounded-xl border border-border object-contain shadow-sm"
                   />
-                  <p className="mt-2 text-sm font-medium text-foreground">{file.name}</p>
-                </>
+                  <p className="text-sm font-medium text-foreground">{file.name}</p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                    >
+                      <Upload className="mr-1 h-4 w-4" />Change image
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      aria-label="Remove image"
+                      onClick={(e) => { e.stopPropagation(); removeFile(); }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Click to upload product image</p>
+                <>
+                  <Upload className="mb-3 h-10 w-10 text-muted-foreground" />
+                  <p className="text-base font-medium text-foreground">Drag & drop your image here</p>
+                  <p className="mt-1 text-sm text-muted-foreground">or click to browse</p>
+                  <p className="mt-3 text-xs text-muted-foreground/80">JPG, PNG or WEBP • Max 10MB</p>
+                </>
               )}
-              <input ref={fileInputRef} id="product_image" type="file" accept="image/*" className="hidden"
-                onChange={(e) => { setFile(e.target.files?.[0] || null); setValidationErrors((prev) => ({ ...prev, product_image: "" })); }}
-              />
             </div>
-            {validationErrors.product_image && <p className="text-xs text-destructive">{validationErrors.product_image}</p>}
+            {fileError && <p className="text-xs text-destructive">{fileError}</p>}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="age" className="text-sm font-medium text-foreground">
-              Model Age <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="age"
-              type="number"
-              min={1}
-              step={1}
-              placeholder="Enter model age"
-              value={formData.age}
-              onChange={(e) => { setFormData((prev) => ({ ...prev, age: e.target.value })); setValidationErrors((prev) => ({ ...prev, age: "" })); }}
-              className={validationErrors.age ? "border-destructive" : ""}
-            />
-            {validationErrors.age && <p className="text-xs text-destructive">{validationErrors.age}</p>}
+          <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">AI auto-casting:</span>{" "}
+              gender, age, skin tone, hair, pose and background are chosen to match your product.
+            </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {selectFields.map((field) => (
-              <div key={field.name} className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">{field.label} <span className="text-destructive">*</span></Label>
-                <Select value={formData[field.name]} onValueChange={(val) => { setFormData((prev) => ({ ...prev, [field.name]: val })); setValidationErrors((prev) => ({ ...prev, [field.name]: "" })); }}>
-                  <SelectTrigger className={validationErrors[field.name] ? "border-destructive" : ""}><SelectValue placeholder={`Select ${field.label.toLowerCase()}`} /></SelectTrigger>
-                  <SelectContent>{field.options.map((opt) => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent>
-                </Select>
-                {validationErrors[field.name] && <p className="text-xs text-destructive">{validationErrors[field.name]}</p>}
-              </div>
-            ))}
+          <div className="space-y-1 rounded-lg p-3">
+            <p className="text-sm font-medium text-muted-foreground">Tips for best results</p>
+            <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground/80">
+              <li>Use a plain or clean background</li>
+              <li>Show the full product, well lit</li>
+              <li>One product per image</li>
+            </ul>
           </div>
 
-          <Button type="button" disabled={loading} className="w-full" size="lg" onClick={handleSubmit}>
-            {loading ? <><Loader2 className="animate-spin" />Generating Video…</> : "Generate CGI Ad Video"}
+          <Button
+            type="button"
+            disabled={loading || !file}
+            className="w-full"
+            size="lg"
+            onClick={handleSubmit}
+          >
+            {loading ? <><Loader2 className="animate-spin" />Uploading…</> : "Generate CGI Ad Video"}
           </Button>
         </div>
 
