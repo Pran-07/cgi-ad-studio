@@ -2,6 +2,13 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, Upload, RotateCcw, Film, AlertCircle, LogOut, Home, X, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +16,23 @@ import { useAuth } from "@/hooks/useAuth";
 
 const START_URL = "https://hjp07.app.n8n.cloud/webhook/adcreator.in";
 const STATUS_URL = "https://hjp07.app.n8n.cloud/webhook/adcraftor-status";
+
+const OCCASION_OPTIONS = [
+  { emoji: "🎬", label: "Studio (no occasion)", value: "none" },
+  { emoji: "🪔", label: "Diwali", value: "diwali" },
+  { emoji: "🎆", label: "New Year", value: "new_year" },
+  { emoji: "🎨", label: "Holi", value: "holi" },
+  { emoji: "🌙", label: "Eid", value: "eid" },
+  { emoji: "🎄", label: "Christmas", value: "christmas" },
+  { emoji: "🧵", label: "Raksha Bandhan", value: "raksha_bandhan" },
+  { emoji: "💃", label: "Navratri / Garba", value: "navratri" },
+  { emoji: "💍", label: "Wedding Season", value: "wedding" },
+  { emoji: "❤️", label: "Valentine's Day", value: "valentines" },
+  { emoji: "🇮🇳", label: "Independence Day", value: "independence_day" },
+  { emoji: "🐘", label: "Ganesh Chaturthi", value: "ganesh_chaturthi" },
+  { emoji: "☀️", label: "Summer", value: "summer" },
+  { emoji: "🌧️", label: "Monsoon", value: "monsoon" },
+];
 const POLL_INTERVAL = 5000;
 const TIMEOUT_MS = 10 * 60 * 1000;
 
@@ -26,6 +50,7 @@ function isVideoUrl(url: string): boolean {
 const Index = () => {
   const { user, signOut } = useAuth();
   const [file, setFile] = useState<File | null>(null);
+  const [occasion, setOccasion] = useState("none");
   const [fileError, setFileError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [loading, setLoading] = useState(false);
