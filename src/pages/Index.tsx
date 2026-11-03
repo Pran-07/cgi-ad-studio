@@ -190,7 +190,7 @@ const Index = () => {
       const res = await fetch(START_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image_url: urlData.publicUrl }),
+        body: JSON.stringify({ image_url: urlData.publicUrl, occasion }),
       });
 
       if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
@@ -211,6 +211,7 @@ const Index = () => {
     stopPolling();
     setFile(null);
     setFileError(null);
+    setOccasion("none");
     setResult(null);
     setError(null);
     setJobId(null);
