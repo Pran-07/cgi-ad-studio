@@ -333,6 +333,29 @@ const Index = () => {
             </ul>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="occasion" className="text-sm font-medium text-foreground">
+              Occasion / Theme <span className="text-muted-foreground font-normal">(optional)</span>
+            </Label>
+            <Select value={occasion} onValueChange={setOccasion}>
+              <SelectTrigger id="occasion" className="h-11">
+                <SelectValue placeholder="Select an occasion" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                {OCCASION_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    <span className="mr-2">{opt.emoji}</span>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground/80">
+              Leave as Studio for a clean studio ad, or pick a festival to set the scene.
+            </p>
+          </div>
+
+
           <Button
             type="button"
             disabled={loading || !file}
